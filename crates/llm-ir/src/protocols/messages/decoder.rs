@@ -186,7 +186,13 @@ impl MessagesDecoder {
 				});
 				Open::Thinking {
 					text: String::new(),
-					signature: None,
+					// Anthropic starts with an empty signature and sends the real one as a
+					// `signature_delta`; OpenRouter sends only the empty one, as a buffered
+					// reply's block would.
+					signature: block
+						.signature
+						.map(|raw| string_of(Some(raw)))
+						.transpose()?,
 				}
 			},
 			"redacted_thinking" => {

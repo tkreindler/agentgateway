@@ -182,6 +182,20 @@ fn hidden_thinking_comes_back_in_the_signature_of_the_next_part() {
 }
 
 #[test]
+fn thinking_without_a_signature_delta_keeps_its_start_signature() {
+	// OpenRouter starts thinking with an empty signature and never sends a `signature_delta`.
+	let mut events = vec![start()];
+	let mut unsigned = thinking(0, "Plan.", "");
+	unsigned.remove(2);
+	events.extend(unsigned);
+	events.extend(text(1, &["Done."]));
+	events.extend(end("end_turn"));
+	let parts = all_parts(&streamed(&events, true).unwrap());
+	assert_eq!(parts[0], json!({"text": "Plan.", "thought": true}));
+	assert_eq!(parts[1]["text"], "Done.");
+}
+
+#[test]
 fn shown_thinking_is_a_thought_part_and_its_state_rides_on_the_answer() {
 	let mut events = vec![start()];
 	events.extend(thinking(0, "Plan.", "s1"));
