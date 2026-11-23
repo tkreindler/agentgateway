@@ -147,6 +147,38 @@ fn text_streams_and_ends_at_done_after_usage() {
 }
 
 #[test]
+fn a_repeated_empty_finished_choice_is_ignored() {
+	// OpenRouter's usage chunk repeats the finished choice with an empty delta.
+	let usage = r#"{"id":"c1","model":"m","choices":[{"index":0,"delta":{"content":"","role":"assistant"},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15,"prompt_tokens_details":{"cached_tokens":4},"completion_tokens_details":{"reasoning_tokens":2}}}"#;
+	let mut payloads = text_stream();
+	payloads[3] = chunk(
+		r#"{"content":"","role":"assistant","reasoning":null}"#,
+		r#""stop""#,
+	);
+	payloads[4] = usage.to_string();
+	assert_eq!(
+		decode(&refs(&payloads)),
+		[
+			"start c1 m",
+			"open 0 Text",
+			"delta 0 Hel",
+			"delta 0 lo é",
+			"end 0 text",
+			USAGE_EVENT,
+			"finish Completed",
+		]
+	);
+}
+
+#[test]
+fn content_after_finish_reason_still_fails() {
+	let mut payloads = text_stream();
+	payloads.insert(4, chunk(r#"{"content":"late"}"#, "null"));
+	let decoded = decode_in(&stream(&refs(&payloads)), usize::MAX, LIMIT);
+	assert_eq!(decoded.errors, ["out of order: choice after finish_reason"]);
+}
+
+#[test]
 fn a_buffered_reply_gives_the_streams_events() {
 	let body = r#"{"id":"c1","model":"m","choices":[{"index":0,"message":{"role":"assistant","content":"Hello é"},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15,"prompt_tokens_details":{"cached_tokens":4},"completion_tokens_details":{"reasoning_tokens":2}}}"#;
 	assert_eq!(

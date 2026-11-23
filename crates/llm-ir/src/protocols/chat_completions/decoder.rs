@@ -194,6 +194,10 @@ impl CompletionsDecoder {
 			_ => return Err(DecodeError::UnsupportedItem("choices".to_string())),
 		};
 		if self.finish_reason.is_some() {
+			// OpenRouter repeats the finished choice, empty, in the chunk carrying usage.
+			if choice.delta.as_ref().is_none_or(WireMessage::is_empty) {
+				return Ok(());
+			}
 			return Err(DecodeError::OutOfOrder("choice after finish_reason"));
 		}
 		if let Some(message) = choice.delta.as_ref().or(choice.message.as_ref()) {
@@ -701,6 +705,20 @@ struct WireMessage<'a> {
 	reasoning_signature: Option<&'a RawValue>,
 	#[serde(borrow)]
 	tool_calls: Option<Vec<WireCall<'a>>>,
+}
+
+impl WireMessage<'_> {
+	/// Whether the message carries nothing a client would see.
+	fn is_empty(&self) -> bool {
+		let blank =
+			|value: Option<&RawValue>| value.is_none_or(|value| matches!(value.get(), "null" | "\"\""));
+		blank(self.content)
+			&& blank(self.refusal)
+			&& blank(self.reasoning_content)
+			&& blank(self.reasoning)
+			&& blank(self.reasoning_signature)
+			&& self.tool_calls.as_ref().is_none_or(Vec::is_empty)
+	}
 }
 
 #[derive(Deserialize)]
