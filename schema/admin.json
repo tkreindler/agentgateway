@@ -1083,6 +1083,11 @@
           "description": "Internal models can be targeted by virtual models but cannot be requested directly.",
           "type": "string",
           "const": "internal"
+        },
+        {
+          "description": "Unlisted models can be requested directly but are left out of the model list.",
+          "type": "string",
+          "const": "unlisted"
         }
       ]
     },

@@ -53,6 +53,8 @@ pub enum ModelVisibility {
 	Public,
 	/// Internal models can be targeted by virtual models but cannot be requested directly.
 	Internal,
+	/// Unlisted models can be requested directly but are left out of the model list.
+	Unlisted,
 }
 
 impl ModelVisibility {
@@ -829,7 +831,7 @@ impl ModelRouter {
 	) -> Result<Option<ResolvedBackend>, ()> {
 		// `models` can store things like `provider/*`. The concrete `requested_model` will be like `provider/real-model`.
 		let matches = |model: &ModelRoute| {
-			(allow_internal || model.visibility == ModelVisibility::Public)
+			(allow_internal || model.visibility != ModelVisibility::Internal)
 				&& model_name_matches(&model.name, requested_model)
 				&& header_matches(&model.header_matches, req)
 		};

@@ -829,7 +829,8 @@ pub struct LocalLLMModels {
 	#[serde(default, skip_serializing_if = "Option::is_none")]
 	#[allow(dead_code)]
 	display_name: Option<String>,
-	/// visibility controls whether clients can request this model directly (rather than only via a `virtualModel`).
+	/// visibility controls whether clients can request this model directly (rather than only via a `virtualModel`),
+	/// and whether the model list includes it.
 	#[serde(
 		default,
 		skip_serializing_if = "llm::model_router::ModelVisibility::is_public"

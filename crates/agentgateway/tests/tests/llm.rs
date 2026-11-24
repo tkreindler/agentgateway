@@ -682,6 +682,9 @@ llm:
   - name: hidden/*
     visibility: internal
     provider: openAI
+  - name: unlisted/*
+    visibility: unlisted
+    provider: openAI
   - name: unsafe/*
     provider: openAI
     transformation:
@@ -918,6 +921,40 @@ llm:
 		})
 		.collect::<std::collections::BTreeMap<_, _>>();
 	insta::assert_json_snapshot!(endpoints);
+}
+
+#[tokio::test]
+async fn llm_unlisted_model_is_served_but_not_listed() {
+	let mock = body_mock(llm_body!("response/completions/basic.json")).await;
+	let config = format!(
+		r#"
+llm:
+  port: 0
+  models:
+  - name: listed
+    provider: openAI
+    params:
+      baseUrl: http://{0}/v1
+  - name: openai/*
+    visibility: unlisted
+    provider: openAI
+    params:
+      baseUrl: http://{0}/v1
+    transformation:
+      model: llmRequest.model.stripPrefix("openai/")
+"#,
+		mock.address()
+	);
+	let t = setup_local_llm_config(&config).await;
+	let io = t.serve_http(strng::literal!("bind/0"));
+
+	assert_eq!(list_models(io.clone(), &[]).await, vec!["listed"]);
+
+	let res = send_completions_with_model(io.clone(), "openai/gpt-4o", &[]).await;
+	assert_eq!(res.status(), StatusCode::OK);
+	let request = single_upstream_request(&mock).await;
+	let upstream_body: Value = serde_json::from_slice(&request.body).expect("upstream request JSON");
+	assert_eq!(upstream_body["model"], "gpt-4o");
 }
 
 #[tokio::test]

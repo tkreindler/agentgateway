@@ -13117,7 +13117,7 @@
           ]
         },
         "visibility": {
-          "description": "visibility controls whether clients can request this model directly (rather than only via a `virtualModel`).",
+          "description": "visibility controls whether clients can request this model directly (rather than only via a `virtualModel`),\nand whether the model list includes it.",
           "$ref": "#/$defs/ModelVisibility"
         },
         "params": {
@@ -13334,6 +13334,11 @@
           "description": "Internal models can be targeted by virtual models but cannot be requested directly.",
           "type": "string",
           "const": "internal"
+        },
+        {
+          "description": "Unlisted models can be requested directly but are left out of the model list.",
+          "type": "string",
+          "const": "unlisted"
         }
       ]
     },
